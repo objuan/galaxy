@@ -1,0 +1,5 @@
+in unity, voglio uno script che costruisce i personaggi in questo modo
+- in input cè uno skeletro semplificato fatto una una stringa con queste regole:
+	bones : []
+
+
