@@ -398,7 +398,7 @@ MonoBehaviour:
   eccentricityMin: 0.96
   eccentricityMax: 1.04
   randomVelocityNoise: 0.02
-  gravitationalConstant: 0.001
+  gravitationalConstant: 100
 --- !u!4 &917947275
 Transform:
   m_ObjectHideFlags: 0
@@ -443,7 +443,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3be947a0b52674e43ba8e05df841747b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GravitySimulationManager
-  gravitationalConstant: 0.001
+  gravitationalConstant: 10000
   speedOfLight: 100
   useBurst: 1
 --- !u!4 &1763918605
