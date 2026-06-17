@@ -40,10 +40,10 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKey(KeyCode.W))
         {
-            player.Boost(true);
+            player.Speed(1);
         }
         else
-            player.Boost(false);
+            player.Speed(0);
 
 
     }

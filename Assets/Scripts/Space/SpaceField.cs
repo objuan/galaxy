@@ -11,37 +11,10 @@ using UnityEngine.Rendering;
 [ExecuteInEditMode]
 public class SpaceField : MonoBehaviour
 {
-    /*
-    struct StartFieldPos
-    {
-        public Vector2 up_pos;
-        public float down_factor;
-
-        public Vector3 GetLocalPos()
-        {
-            return new Vector3(up_pos.x, 0, up_pos.y);
-        }
-        public Vector3 GetWorldPos()
-        {
-            return new Vector3(up_pos.x, 0, up_pos.y);
-        }
-    }
-    */
-    struct VoidSnap
-    {
-        public Void voidObj;
-        public Vector2 pos;
-        public float ray;
-        public float power;
-    }
-
-    class StarFieldLayer
-    {
-        public Vector2[,] points;
-    }
+    public float G = 10f;
+    public float planeY = 5f;
 
     public int seed = 0;
-    public float force_range = 10;
     public int sun_count = 1;
 
     public int width = 100;
@@ -49,30 +22,44 @@ public class SpaceField : MonoBehaviour
     public float step_line = 1;
 
     Mesh mesh = null;
-    List<VoidSnap> voidList = new List<VoidSnap>();
+    List<Void> voids = new();
 
-    StarFieldLayer base_layer;
-    Vector3[,] up_layer;
+    Vector2 halfSize;
 
-    public AnimationCurve distCurve;
+    public IList<Void> Voids => voids;  
 
     private void OnEnable()
     {
-        Compute();
+        voids.Clear();
+
+        halfSize = new Vector2(width/2,depth/2);    
+
+        //Compute();
     }
 
     void Start()
     {
-        Compute();
+      //  Compute();
         //  UnityEngine.Random.InitState(seed);
 
-        CreatePlaneMesh();
+       /// CreatePlaneMesh();
 
 
     }
 
+    public bool IsInside(Vector2 pos)
+    {
+        return pos.x >= -halfSize.x && pos.x <= halfSize.x
+            & pos.y >= -halfSize.y && pos.y <= halfSize.y;
+    }
+    public bool IsInside(Vector3 pos)
+    {
+        return pos.x >= -halfSize.x && pos.x <= halfSize.x
+              & pos.z >= -halfSize.y && pos.z <= halfSize.y;
+    }
     void Update()
     {
+        /*
         bool isChanged = false;
         foreach (VoidSnap v in voidList)
         {
@@ -85,55 +72,23 @@ public class SpaceField : MonoBehaviour
             Compute();
             CreatePlaneMesh();
         }
+        */
     }
-
+    /*
     public Vector3 FieldToWorld(Vector2 base_point)
     {
         float down_factor = 0;
         Vector2 forceSum = Vector2.zero;
-        foreach (VoidSnap v in voidList) {
+        foreach (var  v in voidList) {
             var diff = base_point - v.pos;
             var dist = diff.magnitude;
             // float dist = Mathf.Max(v.ray, Mathf.Min(diff.magnitude, force_range));
-            /*  if (dist < v.ray)
-              {
-                  return v.pos + diff.normalized * v.ray;
-              }
 
-
-              var max_dist = 20;
-              dist = dist - v.ray;
-              dist = Mathf.Min(dist, max_dist);   
-
-              var factor = dist / max_dist;
-              //var curve = 1f- distCurve.Evaluate(factor) ;
-             */
             forceSum += diff.normalized * (v.power);
 
             dist = 1f- Mathf.Min(v.power,dist ) / v.power;
 
             down_factor -= dist*10;
-
-            /*
-            if (dist < v.power)
-            {
-                var delta = v.power - v.ray;
-
-                dist = dist - v.ray;
-
-                float f = (dist) / delta;
-
-                Debug.Assert(f >= 0);
-                Debug.Assert(f <= 1);
-
-                var curve =  distCurve.Evaluate(f) * 2;
-
-                // float factor = (v.power - v- ray) - dist / v.power;
-
-                forceSum += diff.normalized * curve;
-            }
-            */
-
         }
         //Debug.Log(forceSum);
         var p = base_point + forceSum;
@@ -141,7 +96,9 @@ public class SpaceField : MonoBehaviour
         return new Vector3(p.x,0,p.y);// { up_pos = base_point + forceSum, down_factor = down_factor };
 
     }
+    */
 
+    /*
     void Compute()
     {
         Debug.Log("Compute");
@@ -189,6 +146,7 @@ public class SpaceField : MonoBehaviour
         {
             v.voidObj.transform.position = FieldToWorld(v.voidObj.fieldPosition);
         }
+    
     }
 
 
@@ -233,29 +191,7 @@ public class SpaceField : MonoBehaviour
                 indices.Add(startVert + x + width);
             }
         }
-        /*
-        for (int x = 0; x < width; x++)
-        {
-            int startVert = x ;
-            indices[currentIndex++] = startVert;
-            indices[currentIndex++] = startVert + (depth -1)* width  ;
-
-        }
-        */
-
-
-        /*
-        // 3. Creiamo le linee VERTICALI (lungo l'asse Z)
-        for (int x = 0; x < width; x++)
-        {
-            for (int z = 0; z < depth; z++)
-            {
-                int startVert = x + (z * width);
-                indices[currentIndex++] = startVert;
-                indices[currentIndex++] = startVert + depth;
-            }
-        }
-        */
+      
 
         mesh.vertices = planeVertices;
         mesh.normals = planeNormals;
@@ -265,6 +201,13 @@ public class SpaceField : MonoBehaviour
         mesh.SetIndices(indices.ToArray(), MeshTopology.Lines, 0);
 
 
+    }
+    */
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;    
+        GizmosEx.DrawRect(transform.position, width, depth);
     }
 
 }
