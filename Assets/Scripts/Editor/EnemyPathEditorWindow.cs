@@ -90,6 +90,8 @@ public class EnemyPathEditorWindow : EditorWindow
             }
         }
 
+        path.lastFixedPoint= EditorGUILayout.IntField("Last Fixed Idx", path.lastFixedPoint);
+
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar); 
@@ -362,7 +364,7 @@ public class EnemyPathEditorWindow : EditorWindow
         t = Mathf.Repeat(t / duration, 1f);
 
         Vector2 pos =
-            EvaluatePath(t);
+            path.GetPath().EvaluatePath(t);
 
         Vector2 screen =
             WorldToScreen(pos, canvas);
@@ -376,51 +378,9 @@ public class EnemyPathEditorWindow : EditorWindow
         EditorGUI.DrawRect(r, Color.red);
     }
 
-    Vector2 EvaluatePath(float t)
-    {
-        int segments =
-            path.points.Count - 3;
-
-        float total = t * segments;
-
-        int seg =
-            Mathf.Min(
-                Mathf.FloorToInt(total),
-                segments - 1);
-
-        float localT =
-            total - seg;
-
-        return CatmullRom(
-            path.points[seg],
-            path.points[seg + 1],
-            path.points[seg + 2],
-            path.points[seg + 3],
-            localT);
-    }
+ 
 
     #endregion
 
-    #region Math
-
-    static Vector2 CatmullRom(
-        Vector2 p0,
-        Vector2 p1,
-        Vector2 p2,
-        Vector2 p3,
-        float t)
-    {
-        float t2 = t * t;
-        float t3 = t2 * t;
-
-        return 0.5f *
-        (
-            (2f * p1) +
-            (-p0 + p2) * t +
-            (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 +
-            (-p0 + 3f * p1 - 3f * p2 + p3) * t3
-        );
-    }
-
-    #endregion
+ 
 }

@@ -21,11 +21,13 @@ public class EnemyWaveEditor : MonoBehaviour
         wave.waveDef = waveDef;     
 
         cfg = GO.Instance<PresetConfig>();
+
+        Build();
     }
 
     private void Start()
     {
-        Build();
+        //Build();
     }
 
     private void Update()

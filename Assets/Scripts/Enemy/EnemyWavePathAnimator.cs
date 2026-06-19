@@ -1,96 +1,107 @@
 ﻿
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using UnityEditor.PackageManager;
 using UnityEngine;
+using UnityEngine.UIElements;
 
-[RequireComponent(typeof(EnemyWave))]
+[RequireComponent(typeof(Enemy))]
 public class EnemyWavePathAnimator : MonoBehaviour
 {
-    public enum EnemyState
-    {
-        Entering,
-        JoiningFormation,
-        InFormation,
-        Diving
-    }
+    Enemy enemy;
 
-    public float scaleX = 1f;
-    public float scaleZ = 1f;
+    float speed = 200;
 
-    EnemyWave wave;
+    public EnemyWave wave;
+    public EnemyPath path;
+    public EnemyWaveDefCell cell;
 
-    private float elapsed;
-    private Vector3 startPos;
-
-      
     private void OnEnable()
     {
-        wave = GetComponent<EnemyWave>();   
+        enemy = GetComponent<Enemy>();   
     }
-    void Start()
+    IEnumerator Start()
     {
-        startPos = transform.position;
-        elapsed = 0;
+        int lastFixedPoint = path.lastFixedPoint;
+
+        Vector3 midPoint = wave.GetPivot(cell);
+        Vector3 endPoint = wave.LocalToWorld(cell);
+
+        yield return Enter(
+            midPoint,
+            0,
+            4);
+
+        yield return Enter(
+            endPoint,
+            4,
+            path.points.Count - 1);
     }
 
-    void Update()
+    System.Collections.IEnumerator Enter(Vector3 endPoint, int fromPoint,int toPoint)
     {
-        elapsed += Time.deltaTime;
+        //EnemyWaveGroup group = wave.waveDef.groups[enter_path.group_idx];
 
-        foreach (var go_enemy in wave.enemies)
+        var subPath = path.GetSubPath(fromPoint, toPoint);
+
+        Vector3 startPoint = transform.position;
+       
+        Vector2 localStart = path.points[fromPoint+1];
+        Vector2 localEnd = path.points[toPoint - 1];
+
+        Vector3 localDir = new Vector3(
+            localEnd.x - localStart.x,
+            0,
+            -(localEnd.y - localStart.y)
+        );
+
+
+        Vector3 worldDir = endPoint - startPoint;
+        float scale = worldDir.magnitude / localDir.magnitude;
+
+
+        Quaternion rot =
+            Quaternion.FromToRotation(
+                localDir.normalized,
+                worldDir.normalized
+            );
+
+        float st = Time.time;
+
+        //path.BuildLengthTable();
+
+        while (true)
         {
-            var enemy = go_enemy.GetComponent<Enemy>();
+            var t = Time.time - st;
 
-            //if (enemy.pathDef != null)
-            //{
-            //    var p = EvaluatePath(enemy.pathDef, elapsed);
-            //    enemy.transform.position = p;   
-            //}
+            float distance = speed * t;
 
+            Vector2? p = subPath.EvaluateSinglePathDistance(distance);
+
+            if (!p.HasValue)
+                break;
+
+            Vector3 localPos = new Vector3(
+                    p.Value.x - localStart.x,
+                    0,
+                    -(p.Value.y - localStart.y)
+                );
+
+            Vector3 worldPos =
+                startPoint +
+                rot * (localPos * scale);
+
+            transform.position = worldPos;
+
+            yield return null;
         }
-       // transform.position = EvaluatePath(path, elapsed);
+
+
     }
-    /*
-    private Vector3 EvaluatePath(EnemyPathDef path, float time)
-    {
-        if (path.points.Count == 0)
-            return Vector3.zero;
 
-        if (time <= path.points[0].time)
-        {
-            var p = path.points[0];
-            return new Vector3(
-                p.pos.x * scaleX,
-                transform.position.y,
-                p.pos.y * scaleZ);
-        }
-
-        for (int i = 0; i < path.points.Count - 1; i++)
-        {
-            var a = path.points[i];
-            var b = path.points[i + 1];
-
-            if (time >= a.time && time <= b.time)
-            {
-                float t = Mathf.InverseLerp(a.time, b.time, time);
-
-                float x = Mathf.Lerp(a.pos.x, b.pos.x, t) * scaleX;
-                float z = Mathf.Lerp(a.pos.y, b.pos.y, t) * scaleZ;
-
-                return new Vector3(x, transform.position.y, z);
-            }
-        }
-
-        var last = path.points[^1];
-
-     
-        return new Vector3(
-            last.pos.x * scaleX,
-            transform.position.y,
-            last.pos.y * scaleZ);
-    }
-    */
 }
 
 

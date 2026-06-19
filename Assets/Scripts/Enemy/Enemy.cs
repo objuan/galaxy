@@ -6,104 +6,56 @@ using UnityEngine;
 
 public class Enemy: MonoBehaviour
 {
+    public enum EnemyState
+    {
+        Entering,
+        JoiningFormation,
+        InFormation,
+        Diving
+    }
+
     public EnemyWave wave;
     public EnemyWaveDefCell cell;
 
-    public EnemyPath enter_path;
-    public EnemySpawnSourcePoint enter_point;
+    //public EnemyPath enter_path;
+    //public EnemySpawnSourcePoint enter_point;
+
+    public EnemyState state = EnemyState.Entering;
 
     private void OnEnable()
     {
         if (cell != null) {
 
             //var cfg = GO.Instance<EnemyPathConfig>();
-            enter_path = cell.enter_path;// PathPresets.Get(cell.pathId);
+          //  enter_path = cell.enter_path;// PathPresets.Get(cell.pathId);
 
-            var list = GameObject.FindObjectsByType<EnemySpawnSourcePoint>(FindObjectsSortMode.None);
+          //  var list = GameObject.FindObjectsByType<EnemySpawnSourcePoint>(FindObjectsSortMode.None);
 
-            enter_point = list.Where( X=> X.source ==cell.enter_source).FirstOrDefault(); 
+          //  enter_point = list.Where( X=> X.source ==cell.enter_source).FirstOrDefault(); 
 
         }
     }
-    /*
-    public EnemyCommand cmd;
-    float cmdTime;
+  
 
-    public EnemyCommandStack commandStack;
-
-    public float speed;
-
-    private void Start()
+    public void OnBeginEnter()
     {
-        cmd = commandStack.FirstCommand;
+        GetComponent<ShipBuilder>().SetVisible(false);
     }
 
-    private void Update()
+    public void OnEnter(EnemySpawnSourcePoint startPos, EnemyPath path)
     {
-        
-        if (cmd == null)
-            return;
+   
+        GetComponent<ShipBuilder>().SetVisible(true);
 
-        float targetDistance = 9999999;
+        transform.position = startPos.transform.position;
+        transform.rotation = startPos.transform.rotation;
 
-        if (cmd.mode == EnemyCommandMode.SPEED)
-        {
-            speed = cmd.arg_speed;
-            cmd = commandStack.NextCommand(cmd);
-            cmdTime = Time.time;
-        }
-        else if(cmd.mode == EnemyCommandMode.GOTO)
-        {
-            var dir = (cmd.target.transform.position - transform.position);
-            targetDistance = dir.magnitude;
-            var newPos = transform.position  + dir.normalized * speed * Time.deltaTime;
-            transform.position = newPos;
-
-        }
-        else if(cmd.mode == EnemyCommandMode.SPIRAL)
-        {
-            var acc  = SpiraleToPlayer(cmd.target.transform.position, transform.position,speed,  cmd.radial_speed);
-            transform.position += acc *  Time.deltaTime;
-
-            var dir = (cmd.target.transform.position - transform.position);
-            targetDistance = dir.magnitude;
-        }
+        gameObject.AddComponent<EnemyWavePathAnimator>().cell = cell;
+        gameObject.GetComponent<EnemyWavePathAnimator>().path = path;
+        gameObject.GetComponent<EnemyWavePathAnimator>().wave = wave;
 
 
-        if (cmd.condType == CommandCondictionType.Distance && Mathf.Abs(targetDistance - cmd.condValue) < 0.5f)
-        {
-            cmd = commandStack.NextCommand(cmd);
-            cmdTime = Time.time;
-        }
-        else if (cmd.condType == CommandCondictionType.Time && Time.time- cmdTime > cmd.condValue)
-        {
-            cmd = commandStack.NextCommand(cmd);
-            cmdTime = Time.time;
-        }
     }
-
-    public Vector3 SpiraleToPlayer(Vector3 targetPosition,Vector3 pos,float speed,  float radial_speed)
-    {
-        Vector3 toPlayer = targetPosition - pos;
-        Vector3 radial = toPlayer.normalized;
-
-        // direzione tangenziale (perpendicolare sul piano XZ)
-        Vector3 tangent = Vector3.Cross(Vector3.up, radial).normalized;
-
-        // spirale = mix tra entrare e girare
-        //float spiralStrength = 2.0f;
-        //float inwardStrength = 0.0f;
-
-        // più sei lontano → più spirale larga
-        float dist = toPlayer.magnitude;
-        float spiralFactor = Mathf.Clamp01(dist / 10f);
-
-        Vector3 spiralForce = (radial * radial_speed) + (tangent * speed);
-
-        var acc = ( spiralForce);
-        return acc;
-    }
-    */
 
     //=======================================
     public void Kill()

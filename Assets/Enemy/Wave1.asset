@@ -23,15 +23,37 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d7af13baf8291a849871c538145156c6, type: 2}
   data:
   - pos: {x: 4, y: 4}
-    index: 0
-    enter_path: {fileID: 11400000, guid: 8e2be4ba227c8174194d25c4f4db16aa, type: 2}
-    enter_source: {fileID: 11400000, guid: c9755268664d3344a958c679e29f11c7, type: 2}
-    spawnDelay: 0
-  - pos: {x: 6, y: 4}
     index: 1
-    enter_path: {fileID: 11400000, guid: 24370f7f4cec09d4282122c276648645, type: 2}
-    enter_source: {fileID: 11400000, guid: cc261a360a0b87e44aa921b5d4309bd1, type: 2}
-    spawnDelay: 0
+    group_idx: 0
+  - pos: {x: 3, y: 6}
+    index: 1
+    group_idx: 0
+  - pos: {x: 3, y: 2}
+    index: 1
+    group_idx: 0
+  - pos: {x: 2, y: 4}
+    index: 1
+    group_idx: 0
+  - pos: {x: 1, y: 6}
+    index: 1
+    group_idx: 0
+  - pos: {x: 2, y: 8}
+    index: 0
+    group_idx: 0
   sources:
   - {fileID: 11400000, guid: c9755268664d3344a958c679e29f11c7, type: 2}
   - {fileID: 11400000, guid: cc261a360a0b87e44aa921b5d4309bd1, type: 2}
+  enter_paths:
+  - path: {fileID: 11400000, guid: 8e2be4ba227c8174194d25c4f4db16aa, type: 2}
+    spawnSource: {fileID: 11400000, guid: c9755268664d3344a958c679e29f11c7, type: 2}
+    group_idx: 0
+    spawnDelay: 1
+  - path: {fileID: 11400000, guid: 24370f7f4cec09d4282122c276648645, type: 2}
+    spawnSource: {fileID: 11400000, guid: cc261a360a0b87e44aa921b5d4309bd1, type: 2}
+    group_idx: 1
+    spawnDelay: 1
+  groups:
+  - name: 1
+    color: {r: 1, g: 0.023584902, b: 0.023584902, a: 1}
+  - name: 2
+    color: {r: 0, g: 0.060104847, b: 1, a: 1}

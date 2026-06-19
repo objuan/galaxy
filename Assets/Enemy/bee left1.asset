@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8aabd2f6e5081047a76baeb53fdb228, type: 3}
   m_Name: bee left1
   m_EditorClassIdentifier: 
+  desc: 
   points:
-  - {x: -300, y: 300}
+  - {x: -314.70587, y: 295.88235}
   - {x: -260, y: 200}
   - {x: -180, y: 50}
   - {x: -80, y: -80}
@@ -21,3 +22,4 @@ MonoBehaviour:
   - {x: 120, y: -50}
   - {x: 60, y: 50}
   - {x: 0, y: 100}
+  lastFixedPoint: 3

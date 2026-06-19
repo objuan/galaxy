@@ -91,6 +91,7 @@
     <Compile Include="Assets\Scripts\Game\SpaceShip.cs" />
     <Compile Include="Assets\Scripts\Enemy\old\SpawnSource.cs" />
     <Compile Include="Assets\Scripts\Space\SpaceField.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyWaveSpawner.cs" />
     <Compile Include="Assets\Scripts\Enemy\old\EnemyPathConfig.cs" />
     <Compile Include="Assets\Scripts\Weapons\Weapons.cs" />
     <Compile Include="Assets\Scripts\Enemy\old\EnemyPathDef.cs" />

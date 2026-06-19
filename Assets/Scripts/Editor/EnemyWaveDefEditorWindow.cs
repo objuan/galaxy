@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -14,8 +15,11 @@ public class EnemyWaveDefEditorWindow : EditorWindow
     private EnemyWaveDef waveDef;
 
     private int selectedEnemy;
-    private int selectedPath;
-    private EnemyWaveDefCell selectedShip=null;
+
+    // private int selectedPath;
+
+    private HashSet<EnemyWaveDefCell> selectedShips = new();
+    private EnemyWaveDefCell lastSelectedShip = null;
 
     private EditMode editMode = EditMode.AddDel;
     private Vector2 scroll;
@@ -36,7 +40,13 @@ public class EnemyWaveDefEditorWindow : EditorWindow
         Undo.RecordObject(waveDef, "waveDef Edit");
 
         DrawProperties();
-       // DrawSourceEditor();
+
+        DrawGroupEdit();
+
+        DrawPathEdit();
+        
+
+        // DrawSourceEditor();
         GUILayout.Space(10);
 
         GUILayout.BeginHorizontal();
@@ -55,11 +65,30 @@ public class EnemyWaveDefEditorWindow : EditorWindow
         GUILayout.EndHorizontal();
 
         
+
         DrawEnemySelection();
+
         GUILayout.Space(10);
         DrawGrid();
 
-        DrawCellSelection();
+        //  DrawCellSelection();
+
+        GUILayout.BeginHorizontal();
+
+        GUILayout.Label(
+            $"Selected: {selectedShips.Count}",
+            EditorStyles.boldLabel);
+
+        if (selectedShips.Count > 0)
+        {
+            GUILayout.Label(
+                string.Join(
+                    ", ",
+                    selectedShips.Select(
+                        s => $"[{s.pos.x},{s.pos.y}]")));
+        }
+
+        GUILayout.EndHorizontal();
 
         if (GUI.changed)
         {
@@ -67,199 +96,285 @@ public class EnemyWaveDefEditorWindow : EditorWindow
         }
     }
 
-    void DrawCellSelection()
+    void DrawGroupEdit()
     {
-        if (selectedShip!=null)
-        {
-            // PATHS 
+        // ENTER GROUPS
 
-            EnemyPath[] availablePaths = GO.Instance<PresetConfig>().paths;
-
-            string[] pathNames = availablePaths
-                .Select(x => x.name)
-                .Prepend("<NULL>")
-                .ToArray();
-
-            GUILayout.BeginHorizontal();
-
-            int idx = Array.FindIndex( availablePaths,  p => p == selectedShip.enter_path);
-            idx=idx+1; 
-            
-            GUILayout.Label($"Path {selectedShip.index} {selectedShip.pos}");
-
-            idx = EditorGUILayout.Popup(  "",idx,pathNames);
-
-            if (idx != -1)
-            {
-                EnemyPath newID  = null;
-                if (idx > 0 ) 
-                  newID = availablePaths[idx-1];
-
-                if (newID != selectedShip.enter_path)
-                {
-                    selectedShip.enter_path = newID;
-                    EditorUtility.SetDirty(waveDef);
-                }
-              
-
-                if (idx > 0)
-                {
-
-                    if (GUILayout.Button(
-                       "Remove",
-                       GUILayout.Width(80)))
-                    {
-                        Undo.RecordObject(
-                            waveDef,
-                            "Remove Path");
-
-                        selectedShip.enter_path = null;
-
-                        EditorUtility.SetDirty(waveDef);
-
-                    }
-                }
-            }
-            GUILayout.EndHorizontal();
-
-            // SOURCE
-            GUILayout.BeginHorizontal();
-
-            EnemySpawnSource[] availableSources = GO.Instance<PresetConfig>().sources;
-
-            string[] names  = availableSources
-                .Select(x => x.name)
-                .Prepend("<NULL>")
-                .ToArray();
-
-            idx = Array.FindIndex(availableSources, p => p == selectedShip.enter_source);
-            idx = idx + 1;
-
-            GUILayout.Label($"Source ");
-
-            idx = EditorGUILayout.Popup("", idx, names);
-
-            if (idx != -1)
-            {
-                EnemySpawnSource newID = null;
-                if (idx > 0)
-                    newID = availableSources[idx-1];
-
-                if (newID != selectedShip.enter_source)
-                {
-                    selectedShip.enter_source = newID;
-                    EditorUtility.SetDirty(waveDef);
-                }
-                
-            }
-            GUILayout.EndHorizontal();
-
-        }
-    }
-
-    void DrawSourceEditor()
-    {
-        EditorGUILayout.Space();
-        /*EditorGUILayout.LabelField(
-            "Enemy Paths",
-            EditorStyles.boldLabel);
-        */
-
-        EditorGUILayout.LabelField("Spawn Sources");
-
-        for (int i = 0; i < waveDef.sources.Count; i++)
-        {
-            EditorGUILayout.BeginHorizontal();
-
-            waveDef.sources[i] =
-                (EnemySpawnSource)EditorGUILayout.ObjectField(
-                    waveDef.sources[i],
-                    typeof(EnemySpawnSource),
-                    true); // true = consente scene objects
-
-            if (GUILayout.Button("-", GUILayout.Width(25)))
-            {
-                waveDef.sources.RemoveAt(i);
-                GUIUtility.ExitGUI();
-            }
-
-            EditorGUILayout.EndHorizontal();
-        }
-
-        if (GUILayout.Button("Add Source"))
-        {
-            waveDef.sources.Add(null);
-        }
-    }
-    void DrawPathEditor()
-    {
-        /*
         EditorGUILayout.Space();
         EditorGUILayout.LabelField(
-            "Enemy Paths",
+            "Enemy Groups",
             EditorStyles.boldLabel);
 
-        EnemyPath[] availablePaths = GO.Instance<PresetConfig>().paths;
-
-        string[] pathNames =
-            availablePaths
-            .Select(x => x.name)
-            .ToArray();
-        GUILayout.BeginHorizontal();
-        selectedPath = EditorGUILayout.Popup(
-            "Add Path",
-            selectedPath,
-            pathNames);
-
-        if (GUILayout.Button("Add",GUILayout.Width(80)))
+        for (int i = 0; i < waveDef.groups.Count; i++)
         {
-            Undo.RecordObject(waveDef, "Add Path");
+            var entry = waveDef.groups[i];
 
-            waveDef.paths.Add(
-                availablePaths[selectedPath]);
+            GUILayout.BeginHorizontal();
 
-            EditorUtility.SetDirty(waveDef);
-        }
-        GUILayout.EndHorizontal();
+            GUILayout.Label(
+                $"#{i}",
+                GUILayout.Width(25));
 
-        // VIEW
+            entry.name = GUILayout.TextField(entry.name, GUILayout.Width(80));
 
-        for (int i = 0; i < waveDef.paths.Count; i++)
-        {
-            EditorGUILayout.BeginHorizontal();
+         
+            entry.color = EditorGUILayout.ColorField(
+                GUIContent.none,
+                entry.color,
+                false, // showEyedropper
+                true,  // showAlpha
+                false, // hdr
+                GUILayout.Width(60));
 
-            int idx = Array.FindIndex(
-                   availablePaths,
-                   p => p.id == waveDef.paths[i].id);
+            if (GUILayout.Button(
+               "Assign Current",
+               GUILayout.Width(150)))
+            {
+                waveDef.Assign(selectedShips.ToArray(), entry);
 
-            idx = EditorGUILayout.Popup(
-                $"Path {i}",
-                Mathf.Max(0, idx),
-                pathNames);
+                EditorUtility.SetDirty(waveDef);
 
-            waveDef.paths[i] =
-                availablePaths[idx];
+                //break;
+            }
 
+            // REMOVE
             if (GUILayout.Button(
                 "Remove",
                 GUILayout.Width(80)))
             {
-                Undo.RecordObject(
-                    waveDef,
-                    "Remove Path");
+                bool remove =
+                EditorUtility.DisplayDialog(
+                    "Remove Group",
+                    $"Remove group #{i} ?",
+                    "Remove",
+                    "Cancel");
 
-                waveDef.paths.RemoveAt(i);
+                        if (remove)
+                        {
+                    Undo.RecordObject(
+                        waveDef,
+                        "Remove Group");
 
-                EditorUtility.SetDirty(waveDef);
+                    waveDef.groups.RemoveAt(i);
 
+                    EditorUtility.SetDirty(waveDef);
+
+                    break;
+                }
                 break;
             }
 
-            EditorGUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
         }
-        */
+
+        GUILayout.Space(5);
+
+        if (GUILayout.Button("Add Group"))
+        {
+            Undo.RecordObject(
+                waveDef,
+                "Add Group");
+
+            waveDef.groups.Add(
+                new EnemyWaveGroup());
+
+            EditorUtility.SetDirty(waveDef);
+        }
     }
 
+    void DrawPathEdit()
+    {
+        // ENTER PATHS
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField(
+            "Enter Paths",
+            EditorStyles.boldLabel);
+
+        EnemyPath[] availablePaths =
+            GO.Instance<PresetConfig>().paths;
+
+        EnemySpawnSource[] availableSources =
+            waveDef.sources.ToArray();
+
+        string[] pathNames = availablePaths
+            .Select(x => x.name)
+            .Prepend("<NULL>")
+            .ToArray();
+
+        string[] sourceNames = availableSources
+            .Select(x => x.name)
+            .Prepend("<NULL>")
+            .ToArray();
+
+        string[] groupNames = waveDef.groups
+            .Select(g => g.name)
+            .Prepend("<ALL>")
+            .ToArray();
+
+        for (int i = 0; i < waveDef.enter_paths.Count; i++)
+        {
+            var entry = waveDef.enter_paths[i];
+
+            GUILayout.BeginHorizontal();
+
+            // PATH
+            int pathIdx =
+                Array.FindIndex(
+                    availablePaths,
+                    p => p == entry.path);
+
+            pathIdx++;
+
+            GUILayout.Label(
+                $"#{i}",
+                GUILayout.Width(25));
+
+            pathIdx = EditorGUILayout.Popup(
+                pathIdx,
+                pathNames,
+                GUILayout.Width(100));
+
+            EnemyPath newPath = null;
+
+            if (pathIdx > 0)
+                newPath = availablePaths[pathIdx - 1];
+
+            if (newPath != entry.path)
+            {
+                Undo.RecordObject(
+                    waveDef,
+                    "Change Enter Path");
+
+                entry.path = newPath;
+
+                EditorUtility.SetDirty(waveDef);
+            }
+
+            // SOURCE
+            int sourceIdx =
+                Array.FindIndex(
+                    availableSources,
+                    s => s == entry.spawnSource);
+
+            sourceIdx++;
+
+            sourceIdx = EditorGUILayout.Popup(
+                sourceIdx,
+                sourceNames,
+                GUILayout.Width(150));
+
+            EnemySpawnSource newSource = null;
+
+            if (sourceIdx > 0)
+                newSource = availableSources[sourceIdx - 1];
+
+            if (newSource != entry.spawnSource)
+            {
+                Undo.RecordObject(
+                    waveDef,
+                    "Change Spawn Source");
+
+                entry.spawnSource = newSource;
+
+                EditorUtility.SetDirty(waveDef);
+            }
+         
+
+            // GROUP
+
+            int groupIdx = entry.group_idx + 1;
+
+            Rect popupRect = GUILayoutUtility.GetRect(
+                40,
+                EditorGUIUtility.singleLineHeight,
+                GUILayout.Width(40));
+
+            groupIdx = EditorGUI.Popup(
+                popupRect,
+                groupIdx,
+                groupNames);
+
+            entry.group_idx = groupIdx - 1;
+
+            // disegno colore gruppo
+            if (entry.group_idx >= 0 &&
+                entry.group_idx < waveDef.groups.Count)
+            {
+                Rect colorRect = new Rect(
+                    popupRect.x + 2,
+                    popupRect.y + 2,
+                    14,
+                    popupRect.height - 4);
+
+                EditorGUI.DrawRect(
+                    colorRect,
+                    waveDef.groups[entry.group_idx].color);
+            }
+
+
+            // DELAY
+            float newDelay = EditorGUILayout.FloatField(
+                entry.spawnDelay,
+                GUILayout.Width(40));
+
+            if (newDelay != entry.spawnDelay)
+            {
+                Undo.RecordObject(
+                    waveDef,
+                    "Change Spawn Delay");
+
+                entry.spawnDelay = newDelay;
+
+                EditorUtility.SetDirty(waveDef);
+            }
+
+            // REMOVE
+            if (GUILayout.Button(
+                "Remove",
+                GUILayout.Width(80)))
+            {
+            
+                    bool remove =
+                    EditorUtility.DisplayDialog(
+                        "Remove Path",
+                        $"Remove Path #{i} ?",
+                        "Remove",
+                        "Cancel");
+                if (remove)
+                {
+                    Undo.RecordObject(
+                    waveDef,
+                    "Remove Enter Path");
+
+                    waveDef.enter_paths.RemoveAt(i);
+
+                    EditorUtility.SetDirty(waveDef);
+
+                    break;
+                }
+                
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        GUILayout.Space(5);
+
+        if (GUILayout.Button("Add Enter Path"))
+        {
+            Undo.RecordObject(
+                waveDef,
+                "Add Enter Path");
+
+            waveDef.enter_paths.Add(
+                new EnemyWavePath_Enter());
+
+            EditorUtility.SetDirty(waveDef);
+        }
+    }
+
+   
     void DrawAssetSelection()
     {
         EnemyWaveDef newWave = null;
@@ -414,6 +529,27 @@ public class EnemyWaveDefEditorWindow : EditorWindow
             DrawEnemyMiniature(
                 contentRect,
                 waveDef.enemies[cell.index]);
+
+            if (cell.group_idx != -1)
+            {
+                Color bgColor = waveDef.groups[cell.group_idx].color;
+
+                Rect bgRect = new Rect(
+                    contentRect.x + 1,
+                    contentRect.y + 1,
+                    16,
+                    12);
+
+                EditorGUI.DrawRect(
+                    bgRect,
+                    bgColor);
+                
+                GUI.Label(
+                    bgRect,
+                    $"{cell.group_idx}",
+                    EditorStyles.whiteMiniLabel);
+                
+            }
         }
 
         if (GUI.Button(
@@ -431,21 +567,22 @@ public class EnemyWaveDefEditorWindow : EditorWindow
                 contentRect,
                 Color.yellow);
         }
-        if (selectedShip != null && cell == selectedShip)
+        if (cell != null && selectedShips.Contains(cell))
         {
             DrawBorder(
                 contentRect,
-                Color.white);
+                Color.white,
+                2);
         }
         return rect;
     }
 
-    void DrawEnemyMiniature(
+    Rect? DrawEnemyMiniature(
     Rect rect,
     ShipDef def, Action<ShipDef> onClick=null, bool selected = false)
     {
         if (def.layers.Count == 0)
-            return;
+            return null;
 
         // Gestione click
         if (onClick != null)
@@ -491,9 +628,9 @@ public class EnemyWaveDefEditorWindow : EditorWindow
                 Color.yellow
             );
         }
+        return rect;
     }
-    void HandleClick(
-    Vector2Int pos)
+    void HandleClick( Vector2Int pos)
     {
         Undo.RecordObject(
             waveDef,
@@ -504,19 +641,36 @@ public class EnemyWaveDefEditorWindow : EditorWindow
             waveDef.pivot = pos;
             return;
         }
-        if (editMode == EditMode.Select)
-        {
+        if(editMode == EditMode.Select)
+{
             var ship = GetCell(pos);
-            if (ship != null) {
-                selectedShip = ship;
-             }
-            else
-                selectedShip=null;
 
+            if (ship == null)
+            {
+                if (!Event.current.shift)
+                    selectedShips.Clear();
+
+                return;
+            }
+
+            // SHIFT = aggiungi/togli dalla selezione
+            if (Event.current.shift)
+            {
+                if (selectedShips.Contains(ship))
+                    selectedShips.Remove(ship);
+                else
+                    selectedShips.Add(ship);
+            }
+            else
+            {
+                selectedShips.Clear();
+                selectedShips.Add(ship);
+            }
+
+            lastSelectedShip = ship;
             return;
         }
-        var existing =
-            GetCell(pos);
+        var existing =     GetCell(pos);
 
         if (existing == null)
         {
@@ -527,7 +681,9 @@ public class EnemyWaveDefEditorWindow : EditorWindow
             };
 
             waveDef.data.Add(cell);
-            selectedShip = cell;
+            selectedShips.Clear();
+            selectedShips.Add(cell);
+            lastSelectedShip = cell;
             return;
         }
 
@@ -535,7 +691,8 @@ public class EnemyWaveDefEditorWindow : EditorWindow
         {
             waveDef.data.Remove(
                 existing);
-            selectedShip = null;
+            selectedShips.Clear();
+            lastSelectedShip = null;
             return;
         }
 

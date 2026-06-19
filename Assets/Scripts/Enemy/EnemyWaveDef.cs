@@ -13,14 +13,29 @@ public class EnemyWaveDefCell
     // indice della nave
     public int index;
 
-    // traiettoria usata per entrare
-    public EnemyPath enter_path;
+    public int group_idx=-1;
 
-    public EnemySpawnSource enter_source;
+}
+[Serializable]
+public class EnemyWavePath_Enter
+{
+    public EnemyPath path;
 
-    // ritardo di spawn
+    public EnemySpawnSource spawnSource;
+
+    public int group_idx = -1;
+
     public float spawnDelay;
 }
+
+[Serializable]
+public class EnemyWaveGroup
+{
+    public string name;
+    public Color color =Color.white;
+
+}
+
 
 [CreateAssetMenu(
     fileName = "ShipWaveDef",
@@ -44,6 +59,35 @@ public class EnemyWaveDef : ScriptableObject
     //public List<EnemyPath> paths = new();
 
     public List<EnemySpawnSource> sources = new();
+
+    public List<EnemyWavePath_Enter> enter_paths = new List<EnemyWavePath_Enter>();
+
+    public List<EnemyWaveGroup> groups = new();
+
+    public void Assign(EnemyWaveDefCell[] cells, EnemyWaveGroup group)
+    {
+        int groupIdx = groups.IndexOf(group);
+        /*
+        foreach (EnemyWaveDefCell cell in data)
+        {
+            if (cell.group_idx == groupIdx)
+                cell.group_idx = -1;
+        }
+        */
+        foreach (EnemyWaveDefCell cell in cells)
+        {
+            cell.group_idx = groupIdx;
+        }
+    }
+
+    public Vector3 LocalToWorld(Vector3 wavePosition, EnemyWaveDefCell cell)
+    {
+       return
+               wavePosition+ new Vector3(
+                    (cell.pos.x - pivot.x) * padding,
+                    0,
+                    (cell.pos.y - pivot.y) * padding);
+    }
 
 }
 

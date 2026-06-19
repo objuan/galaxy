@@ -21,6 +21,8 @@ public class ShipBuilder : MonoBehaviour
 
     List<GameObject> layers = new List<GameObject>();
 
+    bool isVisible = true;
+
     private void OnEnable()
     {
         cfg = GO.Instance<PresetConfig>();
@@ -33,6 +35,13 @@ public class ShipBuilder : MonoBehaviour
         SetLayer(currentLayer);
 
         Play();
+    }
+
+    public void SetVisible(bool visible)
+    {
+        isVisible=visible;
+
+        SetLayer(visible ? 0 : -1);
     }
 
     private void Update()
@@ -62,7 +71,7 @@ public class ShipBuilder : MonoBehaviour
             }
         }
 #endif
-        if (isPlaying)
+        if (isPlaying && isVisible)
         {
             playTime += Time.deltaTime;
             if (playTime > shipDef.layers[currentLayer].animTime)
