@@ -11,4 +11,12 @@ public class PresetConfig : MonoBehaviour
 
     public Material material_face;
     public Material material_side;
+
+
+    [Header("Enemy Setup")]
+
+    public EnemyPath[] paths;
+
+
+    public EnemySpawnSource[] sources;
 }

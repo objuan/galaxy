@@ -1,12 +1,14 @@
-﻿using System.Linq;
+﻿using JetBrains.Annotations;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-public class EnemyDefEditorWindow : EditorWindow
+public class ShipBuilderEditorWindow : EditorWindow
 {
-    private EnemyDef enemyDef;
+    private ShipBuilder shipBuilder;
+    private ShipDef shipDef=> shipBuilder?.shipDef;
 
-    private int selectedLayer;
+   // private int selectedLayer;
     private Color selectedColor = Color.red;
     private bool editPivot;
 
@@ -27,27 +29,19 @@ public class EnemyDefEditorWindow : EditorWindow
     [MenuItem("Tools/Enemy Def Editor")]
     public static void Open()
     {
-        GetWindow<EnemyDefEditorWindow>("EnemyDef");
+        GetWindow<ShipBuilderEditorWindow>("shipDef");
     }
 
     private void OnGUI()
     {
         DrawAssetSelection();
 
-        if (enemyDef == null)
+        if (shipDef == null)
             return;
 
-        Undo.RecordObject(enemyDef, "EnemyDef Edit");
+        Undo.RecordObject(shipDef, "shipDef Edit");
 
         DrawProperties();
-
-        GUILayout.Space(10);
-        GUILayout.Label("Pivot", EditorStyles.boldLabel);
-
-        enemyDef.pivot =
-            EditorGUILayout.Vector2IntField(
-                "Pivot",
-                enemyDef.pivot);
 
         DrawLayers();
         DrawPalette();
@@ -59,15 +53,15 @@ public class EnemyDefEditorWindow : EditorWindow
         editPivot = GUILayout.Toggle(editPivot,   "Edit Pivot",   "Button");
         if (GUILayout.Button("Clear"))
         {
-            if (enemyDef.layers.Count > 0)
+            if (shipDef.layers.Count > 0)
             {
-                Undo.RecordObject(enemyDef, "Clear Layer");
+                Undo.RecordObject(shipDef, "Clear Layer");
 
-                enemyDef.layers[selectedLayer].data.Clear();
+                shipDef.layers[shipBuilder.currentLayer].data.Clear();
 
-                EditorUtility.SetDirty(enemyDef);
+                EditorUtility.SetDirty(shipDef);
 
-               // enemyDef.OnChanged?.Invoke();
+               // shipDef.OnChanged?.Invoke();
             }
         }
 
@@ -77,42 +71,52 @@ public class EnemyDefEditorWindow : EditorWindow
 
         if (GUI.changed)
         {
-            EditorUtility.SetDirty(enemyDef);
+            EditorUtility.SetDirty(shipDef);
         }
     }
 
     void DrawAssetSelection()
     {
-        if (enemyDef == null && Selection.activeObject is GameObject && ((GameObject)Selection.activeObject).GetComponent<EnemyEditor>())
+        ShipBuilder newShip= null;
+        if ( Selection.activeObject is GameObject && ((GameObject)Selection.activeObject).GetComponent<ShipBuilder>())
         {
-            enemyDef = ((GameObject)Selection.activeObject).GetComponent<EnemyEditor>().enemyDef;
+            newShip = ((GameObject)Selection.activeObject).GetComponent<ShipBuilder>();
         }
 
-        enemyDef = (EnemyDef)EditorGUILayout.ObjectField(
-            "Enemy Def",
-            enemyDef,
-            typeof(EnemyDef),
-            false);
+        if (newShip != shipBuilder)
+        {
+            shipBuilder = newShip;   
+          
+        }
+
+        shipBuilder = (ShipBuilder)EditorGUILayout.ObjectField(
+              "Ship",
+              shipBuilder,
+              typeof(ShipBuilder),
+              false);
     }
 
     void DrawProperties()
     {
         GUILayout.Label("Properties", EditorStyles.boldLabel);
 
-        enemyDef.id =
-            EditorGUILayout.TextField("Id", enemyDef.id);
+        GUILayout.BeginHorizontal();
+        shipDef.id =
+            EditorGUILayout.TextField("Id", shipDef.id);
 
-        enemyDef.enemyName =
-            EditorGUILayout.TextField("Name", enemyDef.enemyName);
+        shipDef.enemyName =
+            EditorGUILayout.TextField("Name", shipDef.enemyName);
 
-        enemyDef.grid_w =
-            EditorGUILayout.IntField("Grid W", enemyDef.grid_w);
+        GUILayout.EndHorizontal ();
+        GUILayout.BeginHorizontal();
+        shipDef.grid_w =
+            EditorGUILayout.IntField("Grid W", shipDef.grid_w);
 
-        enemyDef.grid_h =
-            EditorGUILayout.IntField("Grid H", enemyDef.grid_h);
-
-        enemyDef.grid_size =
-            EditorGUILayout.FloatField("Grid Size", enemyDef.grid_size);
+        shipDef.grid_h =
+            EditorGUILayout.IntField("Grid H", shipDef.grid_h);
+        GUILayout.EndHorizontal();
+        shipDef.grid_size =
+            EditorGUILayout.FloatField("Grid Size", shipDef.grid_size);
     }
 
     void DrawLayers()
@@ -124,24 +128,40 @@ public class EnemyDefEditorWindow : EditorWindow
         int count =
             EditorGUILayout.IntField(
                 "Layer Count",
-                enemyDef.layers.Count);
+                shipDef.layers.Count);
 
-        while (enemyDef.layers.Count < count)
-            enemyDef.layers.Add(new EnemyDefLayer());
+        while (shipDef.layers.Count < count)
+            shipDef.layers.Add(new ShipDefLayer());
 
-        while (enemyDef.layers.Count > count)
-            enemyDef.layers.RemoveAt(enemyDef.layers.Count - 1);
+        while (shipDef.layers.Count > count)
+            shipDef.layers.RemoveAt(shipDef.layers.Count - 1);
 
-        if (enemyDef.layers.Count == 0)
+        if (shipDef.layers.Count == 0)
             return;
 
+        if (shipDef.layers.Count > 0)
+        {
+            int selectedLayer = EditorGUILayout.IntSlider(
+                "Current Layer",
+                shipBuilder.currentLayer,
+                0,
+                shipDef.layers.Count - 1);
+
+            EditorGUILayout.LabelField(
+                $"Layer {selectedLayer}");
+
+            if (shipBuilder.currentLayer != selectedLayer)
+                shipBuilder.SetLayer(selectedLayer);
+        }
+
+        /*
         selectedLayer =
             EditorGUILayout.Popup(
                 "Current Layer",
                 selectedLayer,
                 Enumerable.Range(
                     0,
-                    enemyDef.layers.Count)
+                    shipDef.layers.Count)
                 .Select(x => $"Layer {x}")
                 .ToArray());
 
@@ -149,7 +169,8 @@ public class EnemyDefEditorWindow : EditorWindow
             Mathf.Clamp(
                 selectedLayer,
                 0,
-                enemyDef.layers.Count - 1);
+                shipDef.layers.Count - 1);
+        */
     }
 
     void DrawPalette()
@@ -182,28 +203,40 @@ public class EnemyDefEditorWindow : EditorWindow
 
     void DrawGrid()
     {
-        if (enemyDef.layers.Count == 0)
-            return;
+        for (int i = 0; i < shipDef.layers.Count; i++)
+            DrawGrid(i);
 
-        EnemyDefLayer layer =
-            enemyDef.layers[selectedLayer];
 
-        GUILayout.Label("Grid", EditorStyles.boldLabel);
+    }
 
-        for (int y = enemyDef.grid_h - 1; y >= 0; y--)
+    void DrawGrid(int layerIdx)
+    {
+        ShipDefLayer layer  = shipDef.layers[layerIdx];
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Layer "+ layerIdx, EditorStyles.boldLabel);
+
+        GUILayout.Label("Anim time");
+        layer.animTime = EditorGUILayout.FloatField(
+                layer.animTime,
+                GUILayout.Width(60));
+
+        GUILayout.EndHorizontal();
+
+        for (int y = shipDef.grid_h - 1; y >= 0; y--)
         {
             EditorGUILayout.BeginHorizontal();
 
-            for (int x = 0; x < enemyDef.grid_w; x++)
+            for (int x = 0; x < shipDef.grid_w; x++)
             {
                 Vector2Int pos =
                     new Vector2Int(x, y);
 
                 bool isPivot =
-                    enemyDef.pivot.x == x &&
-                    enemyDef.pivot.y == y;
+                    shipDef.pivot.x == x &&
+                    shipDef.pivot.y == y;
 
-                EnemyDefCell cell =
+                ShipDefCell cell =
                     layer.data.FirstOrDefault(
                         c => c.pos == pos);
 
@@ -224,7 +257,7 @@ public class EnemyDefEditorWindow : EditorWindow
                     // ToggleCell(layer, pos);
                     if (editPivot)
                     {
-                        enemyDef.pivot = pos;
+                        shipDef.pivot = pos;
                     }
                     else
                     {
@@ -240,17 +273,17 @@ public class EnemyDefEditorWindow : EditorWindow
     }
 
     void ToggleCell(
-        EnemyDefLayer layer,
+        ShipDefLayer layer,
         Vector2Int pos)
     {
-        EnemyDefCell cell =
+        ShipDefCell cell =
             layer.data.FirstOrDefault(
                 c => c.pos == pos);
 
         if (cell == null)
         {
             layer.data.Add(
-                new EnemyDefCell
+                new ShipDefCell
                 {
                     pos = pos,
                     color = selectedColor

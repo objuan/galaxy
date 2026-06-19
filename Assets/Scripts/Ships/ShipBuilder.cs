@@ -3,55 +3,24 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 [ExecuteInEditMode]
-public class EnemyEditor : MonoBehaviour
+public class ShipBuilder : MonoBehaviour
 {
-    public EnemyDef enemyDef;
-    private EnemyDef _lastDef;
-
- 
-
-    private EnemyDef currentDef;
-
-    private int _lastHash;
-
     PresetConfig cfg;
 
+    public ShipDef shipDef;
 
-#if UNITY_EDITOR
+    private ShipDef _lastDef;
+    private ShipDef currentDef;
+    private int _lastHash;
 
-    private void OnDisable()
-    {
-     //   Unsubscribe();
-    }
+    public int currentLayer;
+    private int _currentLayer;
 
-    private void OnValidate()
-    {
-       // Subscribe();
-    }
-    /*
-    private void Subscribe()
-    {
-        if (currentDef == enemyDef)
-            return;
+    private bool isPlaying=false;
+    private float playTime =0;
 
-        Unsubscribe();
+    List<GameObject> layers = new List<GameObject>();
 
-        currentDef = enemyDef;
-
-        if (currentDef != null)
-            currentDef.OnChanged += Build;
-    }
-
-    private void Unsubscribe()
-    {
-        if (currentDef != null)
-            currentDef.OnChanged -= Build;
-    }
-    */
-#else
-    
-
-#endif
     private void OnEnable()
     {
         cfg = GO.Instance<PresetConfig>();
@@ -60,6 +29,10 @@ public class EnemyEditor : MonoBehaviour
     private void Start()
     {
         Build();
+
+        SetLayer(currentLayer);
+
+        Play();
     }
 
     private void Update()
@@ -67,27 +40,62 @@ public class EnemyEditor : MonoBehaviour
 #if UNITY_EDITOR
 
         if (!Application.isPlaying)
-        { 
+        {
 
-            if (enemyDef == null)
+            if (shipDef == null)
                 return;
 
-            int hash = JsonUtility.ToJson(enemyDef).GetHashCode();
+            int hash = JsonUtility.ToJson(shipDef).GetHashCode();
 
             if (hash != _lastHash)
             {
                 _lastHash = hash;
                 Build();
+                SetLayer(currentLayer);
+            }
+
+
+            if (currentLayer != _currentLayer)
+            {
+                _currentLayer = currentLayer;
+                SetLayer(currentLayer);
             }
         }
-
 #endif
+        if (isPlaying)
+        {
+            playTime += Time.deltaTime;
+            if (playTime > shipDef.layers[currentLayer].animTime)
+            {
+                int layer = (currentLayer + 1) % shipDef.layers.Count;
+                SetLayer(layer);
+                playTime = 0;
+            }
+        }
+    }
+
+    public void Play()
+    {
+        isPlaying = true;
+        playTime = Time.time;
+    }
+
+    public void SetLayer(int index)
+    {
+        currentLayer = index;
+
+        for (int i = 0; i < layers.Count; i++)
+        {
+            layers[i].SetActive(i == currentLayer);
+        }
     }
 
     public void Build()
     {
-        if (enemyDef == null)
+        if (shipDef == null)
             return;
+
+        layers.Clear();
 
         if (cfg.cubePrefab == null)
         {
@@ -109,25 +117,27 @@ public class EnemyEditor : MonoBehaviour
         ClearChildren();
 
         for (int layerIndex = 0;
-             layerIndex < enemyDef.layers.Count;
+             layerIndex < shipDef.layers.Count;
              layerIndex++)
         {
             BuildLayer(
                 layerIndex,
-                enemyDef.layers[layerIndex],
+                shipDef.layers[layerIndex],
                 cubeMesh);
         }
     }
 
     private void BuildLayer(
         int layerIndex,
-        EnemyDefLayer layer,
+        ShipDefLayer layer,
         Mesh cubeMesh)
     {
         GameObject go =
             new GameObject($"Layer_{layerIndex}");
 
         go.transform.SetParent(transform, false);
+
+        layers.Add(go);
 
         MeshFilter mf =
             go.AddComponent<MeshFilter>();
@@ -148,7 +158,7 @@ public class EnemyEditor : MonoBehaviour
 
     private Mesh BuildMesh(
         int layerIndex,
-        EnemyDefLayer layer,
+        ShipDefLayer layer,
         Mesh cubeMesh)
     {
         List<Vector3> vertices = new();
@@ -169,18 +179,18 @@ public class EnemyEditor : MonoBehaviour
             submeshTriangles[i] = new List<int>();
         }
 
-        float scale = enemyDef.grid_size;
-        float px = enemyDef.pivot.x;
-        float pz = enemyDef.pivot.y;
+        float scale = shipDef.grid_size;
+        float px = shipDef.pivot.x;
+        float pz = shipDef.pivot.y;
 
         foreach (var cell in layer.data)
         {
             int vertexOffset = vertices.Count;
 
             Vector3 cubePos = new Vector3(
-                (cell.pos.x - enemyDef.pivot.x ) * scale ,
-                layerIndex * scale,
-                (cell.pos.y - enemyDef.pivot.y ) * scale
+                (cell.pos.x - shipDef.pivot.x ) * scale ,
+               0,// layerIndex * scale,
+                (cell.pos.y - shipDef.pivot.y ) * scale
             );
 
             Matrix4x4 matrix = Matrix4x4.TRS(

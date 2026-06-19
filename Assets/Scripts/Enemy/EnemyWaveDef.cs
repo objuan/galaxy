@@ -1,18 +1,29 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using UnityEditor.PackageManager;
 using UnityEngine;
+
 
 [Serializable]
 public class EnemyWaveDefCell
 {
     public Vector2Int pos;
+
+    // indice della nave
     public int index;
+
+    // traiettoria usata per entrare
+    public EnemyPath enter_path;
+
+    public EnemySpawnSource enter_source;
+
+    // ritardo di spawn
+    public float spawnDelay;
 }
 
-
 [CreateAssetMenu(
-    fileName = "EnemyWaveDef",
+    fileName = "ShipWaveDef",
     menuName = "Game Data/Enemy Wave Def"
 )]
 public class EnemyWaveDef : ScriptableObject
@@ -26,10 +37,16 @@ public class EnemyWaveDef : ScriptableObject
 
     public Vector2Int pivot;
 
-    public List<EnemyDef> enemies = new();
+    public List<ShipDef> enemies = new();
 
     public List<EnemyWaveDefCell> data = new();
 
+    //public List<EnemyPath> paths = new();
+
+    public List<EnemySpawnSource> sources = new();
+
 }
+
+
 
 

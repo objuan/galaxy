@@ -7,7 +7,7 @@ using UnityEngine;
 
 
 [Serializable]
-public class EnemyDefCell 
+public class ShipDefCell 
 {
     public Vector2Int pos;
     public Color color;
@@ -15,17 +15,18 @@ public class EnemyDefCell
 
 
 [Serializable]
-public class EnemyDefLayer
+public class ShipDefLayer
 {
+    public float animTime = 1;
 
-    public List<EnemyDefCell> data = new();
+    public List<ShipDefCell> data = new();
 }
 
 [CreateAssetMenu(
-    fileName = "EnemyDef",
-    menuName = "Game Data/Enemy Def"
+    fileName = "ShipDef",
+    menuName = "Game Data/Ship Def"
 )]
-public class EnemyDef : ScriptableObject
+public class ShipDef : ScriptableObject
 {
     public event Action OnChanged;
 
@@ -38,7 +39,7 @@ public class EnemyDef : ScriptableObject
 
     public Vector2Int pivot;
 
-    public List<EnemyDefLayer> layers = new();
+    public List<ShipDefLayer> layers = new();
 
     private void OnValidate()
     {

@@ -2,13 +2,22 @@
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using static Unity.Burst.Intrinsics.X86.Avx;
+
 
 public class EnemyWaveDefEditorWindow : EditorWindow
 {
-    private EnemyWaveDef enemyDef;
+    public enum EditMode
+    {
+        AddDel, Pivot, Select
+    }
+    private EnemyWaveDef waveDef;
 
     private int selectedEnemy;
-    private bool editPivot;
+    private int selectedPath;
+    private EnemyWaveDefCell selectedShip=null;
+
+    private EditMode editMode = EditMode.AddDel;
     private Vector2 scroll;
 
     [MenuItem("Tools/Enemy Wave Def Editor")]
@@ -21,58 +30,250 @@ public class EnemyWaveDefEditorWindow : EditorWindow
     {
         DrawAssetSelection();
 
-        if (enemyDef == null)
+        if (waveDef == null)
             return;
 
-        Undo.RecordObject(enemyDef, "EnemyDef Edit");
+        Undo.RecordObject(waveDef, "waveDef Edit");
 
         DrawProperties();
-        /*
+       // DrawSourceEditor();
         GUILayout.Space(10);
-        GUILayout.Label("Pivot", EditorStyles.boldLabel);
 
-        enemyDef.pivot =
-            EditorGUILayout.Vector2IntField(
-                "Pivot",
-                enemyDef.pivot);
-
-        */
         GUILayout.BeginHorizontal();
 
-        editPivot =
-            GUILayout.Toggle(
-                editPivot,
-                "Edit Pivot",
-                "Button");
-        
+        editMode = (EditMode)GUILayout.Toolbar(
+          (int)editMode,
+          new string[] { "AddDel", "Pivot", "Select" });
+
+
         if (GUILayout.Button("Clear"))
         {
-            Undo.RecordObject(enemyDef, "Clear Wave");
-            enemyDef.data.Clear();
+            Undo.RecordObject(waveDef, "Clear Wave");
+            waveDef.data.Clear();
         }
 
         GUILayout.EndHorizontal();
 
+        
         DrawEnemySelection();
         GUILayout.Space(10);
         DrawGrid();
 
+        DrawCellSelection();
+
         if (GUI.changed)
         {
-            EditorUtility.SetDirty(enemyDef);
+            EditorUtility.SetDirty(waveDef);
         }
+    }
+
+    void DrawCellSelection()
+    {
+        if (selectedShip!=null)
+        {
+            // PATHS 
+
+            EnemyPath[] availablePaths = GO.Instance<PresetConfig>().paths;
+
+            string[] pathNames = availablePaths
+                .Select(x => x.name)
+                .Prepend("<NULL>")
+                .ToArray();
+
+            GUILayout.BeginHorizontal();
+
+            int idx = Array.FindIndex( availablePaths,  p => p == selectedShip.enter_path);
+            idx=idx+1; 
+            
+            GUILayout.Label($"Path {selectedShip.index} {selectedShip.pos}");
+
+            idx = EditorGUILayout.Popup(  "",idx,pathNames);
+
+            if (idx != -1)
+            {
+                EnemyPath newID  = null;
+                if (idx > 0 ) 
+                  newID = availablePaths[idx-1];
+
+                if (newID != selectedShip.enter_path)
+                {
+                    selectedShip.enter_path = newID;
+                    EditorUtility.SetDirty(waveDef);
+                }
+              
+
+                if (idx > 0)
+                {
+
+                    if (GUILayout.Button(
+                       "Remove",
+                       GUILayout.Width(80)))
+                    {
+                        Undo.RecordObject(
+                            waveDef,
+                            "Remove Path");
+
+                        selectedShip.enter_path = null;
+
+                        EditorUtility.SetDirty(waveDef);
+
+                    }
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            // SOURCE
+            GUILayout.BeginHorizontal();
+
+            EnemySpawnSource[] availableSources = GO.Instance<PresetConfig>().sources;
+
+            string[] names  = availableSources
+                .Select(x => x.name)
+                .Prepend("<NULL>")
+                .ToArray();
+
+            idx = Array.FindIndex(availableSources, p => p == selectedShip.enter_source);
+            idx = idx + 1;
+
+            GUILayout.Label($"Source ");
+
+            idx = EditorGUILayout.Popup("", idx, names);
+
+            if (idx != -1)
+            {
+                EnemySpawnSource newID = null;
+                if (idx > 0)
+                    newID = availableSources[idx-1];
+
+                if (newID != selectedShip.enter_source)
+                {
+                    selectedShip.enter_source = newID;
+                    EditorUtility.SetDirty(waveDef);
+                }
+                
+            }
+            GUILayout.EndHorizontal();
+
+        }
+    }
+
+    void DrawSourceEditor()
+    {
+        EditorGUILayout.Space();
+        /*EditorGUILayout.LabelField(
+            "Enemy Paths",
+            EditorStyles.boldLabel);
+        */
+
+        EditorGUILayout.LabelField("Spawn Sources");
+
+        for (int i = 0; i < waveDef.sources.Count; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            waveDef.sources[i] =
+                (EnemySpawnSource)EditorGUILayout.ObjectField(
+                    waveDef.sources[i],
+                    typeof(EnemySpawnSource),
+                    true); // true = consente scene objects
+
+            if (GUILayout.Button("-", GUILayout.Width(25)))
+            {
+                waveDef.sources.RemoveAt(i);
+                GUIUtility.ExitGUI();
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        if (GUILayout.Button("Add Source"))
+        {
+            waveDef.sources.Add(null);
+        }
+    }
+    void DrawPathEditor()
+    {
+        /*
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField(
+            "Enemy Paths",
+            EditorStyles.boldLabel);
+
+        EnemyPath[] availablePaths = GO.Instance<PresetConfig>().paths;
+
+        string[] pathNames =
+            availablePaths
+            .Select(x => x.name)
+            .ToArray();
+        GUILayout.BeginHorizontal();
+        selectedPath = EditorGUILayout.Popup(
+            "Add Path",
+            selectedPath,
+            pathNames);
+
+        if (GUILayout.Button("Add",GUILayout.Width(80)))
+        {
+            Undo.RecordObject(waveDef, "Add Path");
+
+            waveDef.paths.Add(
+                availablePaths[selectedPath]);
+
+            EditorUtility.SetDirty(waveDef);
+        }
+        GUILayout.EndHorizontal();
+
+        // VIEW
+
+        for (int i = 0; i < waveDef.paths.Count; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            int idx = Array.FindIndex(
+                   availablePaths,
+                   p => p.id == waveDef.paths[i].id);
+
+            idx = EditorGUILayout.Popup(
+                $"Path {i}",
+                Mathf.Max(0, idx),
+                pathNames);
+
+            waveDef.paths[i] =
+                availablePaths[idx];
+
+            if (GUILayout.Button(
+                "Remove",
+                GUILayout.Width(80)))
+            {
+                Undo.RecordObject(
+                    waveDef,
+                    "Remove Path");
+
+                waveDef.paths.RemoveAt(i);
+
+                EditorUtility.SetDirty(waveDef);
+
+                break;
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+        */
     }
 
     void DrawAssetSelection()
     {
-        if (enemyDef == null && Selection.activeObject is  GameObject && ((GameObject)Selection.activeObject).GetComponent< EnemyWaveEditor>())
-        {
-            enemyDef = ((GameObject)Selection.activeObject).GetComponent<EnemyWaveEditor>().waveDef;
-        }
+        EnemyWaveDef newWave = null;
 
-        enemyDef = (EnemyWaveDef)EditorGUILayout.ObjectField(
+        if (Selection.activeObject is  GameObject && ((GameObject)Selection.activeObject).GetComponent< EnemyWaveEditor>())
+        {
+            newWave = ((GameObject)Selection.activeObject).GetComponent<EnemyWaveEditor>().waveDef;
+        }
+        if (newWave!= waveDef)
+            waveDef=newWave;    
+
+        waveDef = (EnemyWaveDef)EditorGUILayout.ObjectField(
             "Enemy Wave Def",
-            enemyDef,
+            waveDef,
             typeof(EnemyWaveDef),
             false);
 
@@ -82,29 +283,29 @@ public class EnemyWaveDefEditorWindow : EditorWindow
     {
         GUILayout.Label("Properties", EditorStyles.boldLabel);
         GUILayout.BeginHorizontal();
-        enemyDef.id =
-            EditorGUILayout.TextField("Id", enemyDef.id);
+        waveDef.id =
+            EditorGUILayout.TextField("Id", waveDef.id);
 
-        enemyDef.desc =
-            EditorGUILayout.TextField("Name", enemyDef.desc);
+        waveDef.desc =
+            EditorGUILayout.TextField("Name", waveDef.desc);
         GUILayout.EndHorizontal();
         GUILayout.BeginHorizontal();
-        enemyDef.grid_w =
-            EditorGUILayout.IntField("Grid W", enemyDef.grid_w);
+        waveDef.grid_w =
+            EditorGUILayout.IntField("Grid W", waveDef.grid_w);
 
-        enemyDef.grid_h =
-            EditorGUILayout.IntField("Grid H", enemyDef.grid_h);
+        waveDef.grid_h =
+            EditorGUILayout.IntField("Grid H", waveDef.grid_h);
 
         
         GUILayout.EndHorizontal();
 
-        enemyDef.padding =
-            EditorGUILayout.FloatField("Padding", enemyDef.padding);
+        waveDef.padding =
+            EditorGUILayout.FloatField("Padding", waveDef.padding);
     }
 
     void DrawEnemySelection()
     {
-        if (enemyDef == null || enemyDef.enemies.Count == 0)
+        if (waveDef == null || waveDef.enemies.Count == 0)
             return;
 
         GUILayout.Space(10);
@@ -115,14 +316,14 @@ public class EnemyWaveDefEditorWindow : EditorWindow
         float availableWidth = EditorGUIUtility.currentViewWidth - 30;
         int itemsPerRow = Mathf.Max(1, Mathf.FloorToInt(availableWidth / (size + spacing)));
 
-        int rows = Mathf.CeilToInt((float)enemyDef.enemies.Count / itemsPerRow);
+        int rows = Mathf.CeilToInt((float)waveDef.enemies.Count / itemsPerRow);
 
         Rect area = GUILayoutUtility.GetRect(
             availableWidth,
             rows * (size + spacing)
         );
         EditorGUI.DrawRect(area, new Color(0.2f, 0.2f, 0.2f, 1f));
-        for (int i = 0; i < enemyDef.enemies.Count; i++)
+        for (int i = 0; i < waveDef.enemies.Count; i++)
         {
             int col = i % itemsPerRow;
             int row = i / itemsPerRow;
@@ -134,41 +335,10 @@ public class EnemyWaveDefEditorWindow : EditorWindow
                 size
             );
 
-            DrawEnemyMiniature(rect, enemyDef.enemies[i] ,(e)=>
+            DrawEnemyMiniature(rect, waveDef.enemies[i] ,(e)=>
             {
-                selectedEnemy = enemyDef.enemies.IndexOf(e);
+                selectedEnemy = waveDef.enemies.IndexOf(e);
             }, i == selectedEnemy);
-        }
-    }
-
-    void DrawEnemyPreview(EnemyDef def, float size=12)
-    {
-        Rect r =
-            GUILayoutUtility.GetRect(
-                120,
-                120);
-
-        EditorGUI.DrawRect(
-            r,
-            new Color(.15f, .15f, .15f));
-
-        if (def.layers.Count == 0)
-            return;
-
-        var layer = def.layers[0];
-
-        foreach (var cell in layer.data)
-        {
-            Rect cellRect =
-                new Rect(
-                    r.x + cell.pos.x * size,
-                    r.y + (def.grid_h - 1 - cell.pos.y) * size,
-                    size,
-                    size);
-
-            EditorGUI.DrawRect(
-                cellRect,
-                cell.color);
         }
     }
 
@@ -180,18 +350,20 @@ public class EnemyWaveDefEditorWindow : EditorWindow
             EditorGUILayout.BeginScrollView(
                 scroll);
 
-        for (int y = enemyDef.grid_h - 1; y >= 0; y--)
+        for (int y = waveDef.grid_h - 1; y >= 0; y--)
         {
             EditorGUILayout.BeginHorizontal();
 
-            for (int x = 0; x < enemyDef.grid_w; x++)
+            for (int x = 0; x < waveDef.grid_w; x++)
             {
                 Vector2Int pos =
                     new Vector2Int(x, y);
 
-                DrawCell(
+                var rect = DrawCell(
                     pos,
                     cellSize);
+
+            
             }
 
             EditorGUILayout.EndHorizontal();
@@ -203,12 +375,10 @@ public class EnemyWaveDefEditorWindow : EditorWindow
     EnemyWaveDefCell GetCell(
     Vector2Int pos)
     {
-        return enemyDef.data.FirstOrDefault(
+        return waveDef.data.FirstOrDefault(
             x => x.pos == pos);
     }
-    void DrawCell(
-        Vector2Int pos,
-        float size)
+    Rect DrawCell(  Vector2Int pos, float size)
     {
         Rect rect =
             GUILayoutUtility.GetRect(
@@ -243,7 +413,7 @@ public class EnemyWaveDefEditorWindow : EditorWindow
         {
             DrawEnemyMiniature(
                 contentRect,
-                enemyDef.enemies[cell.index]);
+                waveDef.enemies[cell.index]);
         }
 
         if (GUI.Button(
@@ -254,20 +424,25 @@ public class EnemyWaveDefEditorWindow : EditorWindow
             HandleClick(pos);
         }
 
-        bool isPivot =
-          enemyDef.pivot == pos;
 
-        if (isPivot)
+        if (waveDef.pivot == pos)
         {
             DrawBorder(
                 contentRect,
                 Color.yellow);
         }
+        if (selectedShip != null && cell == selectedShip)
+        {
+            DrawBorder(
+                contentRect,
+                Color.white);
+        }
+        return rect;
     }
 
     void DrawEnemyMiniature(
     Rect rect,
-    EnemyDef def, Action<EnemyDef> onClick=null, bool selected = false)
+    ShipDef def, Action<ShipDef> onClick=null, bool selected = false)
     {
         if (def.layers.Count == 0)
             return;
@@ -321,35 +496,46 @@ public class EnemyWaveDefEditorWindow : EditorWindow
     Vector2Int pos)
     {
         Undo.RecordObject(
-            enemyDef,
+            waveDef,
             "Edit Wave");
 
-        if (editPivot)
+        if (editMode == EditMode.Pivot)
         {
-            enemyDef.pivot = pos;
+            waveDef.pivot = pos;
             return;
         }
+        if (editMode == EditMode.Select)
+        {
+            var ship = GetCell(pos);
+            if (ship != null) {
+                selectedShip = ship;
+             }
+            else
+                selectedShip=null;
 
+            return;
+        }
         var existing =
             GetCell(pos);
 
         if (existing == null)
         {
-            enemyDef.data.Add(
-                new EnemyWaveDefCell
-                {
-                    pos = pos,
-                    index = selectedEnemy
-                });
+            var cell = new EnemyWaveDefCell
+            {
+                pos = pos,
+                index = selectedEnemy
+            };
 
+            waveDef.data.Add(cell);
+            selectedShip = cell;
             return;
         }
 
         if (existing.index == selectedEnemy)
         {
-            enemyDef.data.Remove(
+            waveDef.data.Remove(
                 existing);
-
+            selectedShip = null;
             return;
         }
 
@@ -357,7 +543,7 @@ public class EnemyWaveDefEditorWindow : EditorWindow
             selectedEnemy;
 
         EditorUtility.SetDirty(
-            enemyDef);
+            waveDef);
     }
     // ===========================================================
     void DrawBorder(Rect rect, Color color, float thickness = 1f)

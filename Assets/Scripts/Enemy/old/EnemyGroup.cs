@@ -36,7 +36,7 @@ public class EnemyGroup : MonoBehaviour
     private void Update()
     {
         // commands
-      
+      /*
         StartPose pose = null;
         do
         {
@@ -52,7 +52,7 @@ public class EnemyGroup : MonoBehaviour
             }
         } while (pose != null);
 
-        
+        */
 
     }
 
@@ -60,5 +60,7 @@ public class EnemyGroup : MonoBehaviour
     {
 
     }
+
 }
+
 

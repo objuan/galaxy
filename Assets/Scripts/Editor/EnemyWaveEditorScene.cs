@@ -6,6 +6,7 @@ public class EnemyWaveEditorScene : Editor
 {
     private EnemyWaveEditor editor;
 
+
     private void OnSceneGUI()
     {
         editor = (EnemyWaveEditor)target;
@@ -19,10 +20,10 @@ public class EnemyWaveEditorScene : Editor
     void DrawGrid()
     {
         var def = editor.waveDef;
-        float grid_size = 1;
+        float grid_size = def.padding;
         Vector3 offset = -new Vector3(grid_size * def.grid_w / 2,0, grid_size * def.grid_h / 2);      
 
-        Handles.color = Color.gray;
+        Handles.color = Color.yellow;
 
         for (int x = 0; x <= def.grid_w; x++)
         {

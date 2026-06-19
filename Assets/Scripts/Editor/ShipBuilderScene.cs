@@ -1,16 +1,16 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(EnemyEditor))]
-public class EnemyEditorScene : Editor
+[CustomEditor(typeof(ShipBuilder))]
+public class ShipBuilderScene : Editor
 {
-    private EnemyEditor editor;
+    private ShipBuilder editor;
 
     private void OnSceneGUI()
     {
-        editor = (EnemyEditor)target;
+        editor = (ShipBuilder)target;
 
-        if (editor.enemyDef == null)
+        if (editor.shipDef == null)
             return;
 
         DrawGrid();
@@ -18,7 +18,7 @@ public class EnemyEditorScene : Editor
 
     void DrawGrid()
     {
-        var def = editor.enemyDef;
+        var def = editor.shipDef;
         Vector3 offset = -new Vector3(def.grid_size * def.grid_w / 2,0, def.grid_size * def.grid_h / 2);      
 
         Handles.color = Color.gray;

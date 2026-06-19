@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 [ExecuteInEditMode]
+[RequireComponent(typeof(EnemyWave))]
 public class EnemyWaveEditor : MonoBehaviour
 {
     public EnemyWaveDef waveDef;
@@ -12,8 +13,13 @@ public class EnemyWaveEditor : MonoBehaviour
 
     PresetConfig cfg;
 
+    public EnemyWave wave;
+
     private void OnEnable()
     {
+        wave = GetComponent<EnemyWave>();
+        wave.waveDef = waveDef;     
+
         cfg = GO.Instance<PresetConfig>();
     }
 
@@ -50,6 +56,8 @@ public class EnemyWaveEditor : MonoBehaviour
             return;
 
         transform.Clear();
+        wave.enemies.Clear();
+
         /*
 #if UNITY_EDITOR
         // Cancella i figli esistenti
@@ -69,27 +77,19 @@ public class EnemyWaveEditor : MonoBehaviour
             if (cell.index < 0 ||
                 cell.index >= waveDef.enemies.Count)
                 continue;
-
-            EnemyDef enemyDef =
-                waveDef.enemies[cell.index];
-
-            GameObject go =
-                new GameObject(enemyDef.name);
-
-            go.transform.SetParent(
-                transform,
-                false);
-
-            go.transform.localPosition =
+            
+            var pos = 
                 new Vector3(
                     (cell.pos.x - pivot.x) * waveDef.padding,
                     0,
                     (cell.pos.y - pivot.y) * waveDef.padding);
 
-            var editor =
-                go.AddComponent<EnemyEditor>();
+            var enemy = ShipSpawner.Spawn(waveDef.enemies[cell.index], transform, pos);
+            wave.enemies.Add(enemy);
 
-            editor.enemyDef = enemyDef;
+            enemy.AddComponent<Enemy>().cell = cell;
+            enemy.GetComponent<Enemy>().wave = wave;
+
         }
     }
 

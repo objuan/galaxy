@@ -1,11 +1,31 @@
 ﻿
+using System.Linq;
 using UnityEngine;
 
 // ====
 
 public class Enemy: MonoBehaviour
 {
+    public EnemyWave wave;
+    public EnemyWaveDefCell cell;
 
+    public EnemyPath enter_path;
+    public EnemySpawnSourcePoint enter_point;
+
+    private void OnEnable()
+    {
+        if (cell != null) {
+
+            //var cfg = GO.Instance<EnemyPathConfig>();
+            enter_path = cell.enter_path;// PathPresets.Get(cell.pathId);
+
+            var list = GameObject.FindObjectsByType<EnemySpawnSourcePoint>(FindObjectsSortMode.None);
+
+            enter_point = list.Where( X=> X.source ==cell.enter_source).FirstOrDefault(); 
+
+        }
+    }
+    /*
     public EnemyCommand cmd;
     float cmdTime;
 
@@ -17,6 +37,7 @@ public class Enemy: MonoBehaviour
     {
         cmd = commandStack.FirstCommand;
     }
+
     private void Update()
     {
         
@@ -81,6 +102,13 @@ public class Enemy: MonoBehaviour
 
         var acc = ( spiralForce);
         return acc;
+    }
+    */
+
+    //=======================================
+    public void Kill()
+    {
+        gameObject.AddComponent<ShipExplosion>();
     }
 }
 

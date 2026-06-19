@@ -62,8 +62,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Editor\EnemyWaveDefEditorWindow.cs" />
-    <Compile Include="Assets\Scripts\Editor\EnemyDefEditorWindow.cs" />
-    <Compile Include="Assets\Scripts\Editor\EnemyEditorScene.cs" />
+    <Compile Include="Assets\Scripts\Editor\ShipBuilderEditorWindow.cs" />
+    <Compile Include="Assets\Scripts\Editor\EnemyPathEditorWindow.cs" />
+    <Compile Include="Assets\Scripts\Editor\ShipBuilderScene.cs" />
     <Compile Include="Assets\Scripts\Editor\EnemyWaveEditorScene.cs" />
   </ItemGroup>
   <ItemGroup>
